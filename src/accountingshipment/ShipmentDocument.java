@@ -6,26 +6,31 @@ import java.util.*;
  * Документ отгрузки со склада.
  * Бывает двух типов: перемещение (на другой склад) и продажа (покупателю).
  */
-class ShipmentDocument {
+public abstract class ShipmentDocument {
     private String documentId; // GUID документа
     private Date documentDate; // дата документа
-    private String documentType; // тип отгрузки: sale - продажа, moving - перемещение
     private String customer; // получатель (только для продажи)
     private Storage storage; // склад отправления
     private Storage movingStorage; // склад получения
     private List<Product> productsList; // список товаров
 
-    public ShipmentDocument(String documentId, Date documentDate, String documentType,
+    public ShipmentDocument(String documentId, Date documentDate,
                             String customer, Storage storage, Storage movingStorage,
                             List<Product> productsList) {
         this.documentId = documentId;
         this.documentDate = documentDate;
-        this.documentType = documentType;
         this.customer = customer;
         this.storage = storage;
         this.movingStorage = movingStorage;
         this.productsList = productsList;
     }
+
+    public String getDocumentId() { return documentId; }
+    public Date getDocumentDate() { return documentDate; }
+    public String getCustomer() { return customer; }
+    public Storage getStorage() { return storage; }
+    public Storage getMovingStorage() { return movingStorage; }
+    public List<Product> getProductsList() { return productsList; }
 
     /**
      * Суммарная стоимость товаров в документе.
@@ -57,51 +62,5 @@ class ShipmentDocument {
         return promoSum(promoArticles, 0);
     }
 
-    double promoSum(String[] promoArticles, double discountPercent) {
-        boolean isSale = documentType.equals("sale");
-        double sum = 0;
-        for (Product product : productsList) {
-            for (String promoArticle : promoArticles) {
-                if (product.getArticle().equals(promoArticle)) {
-                    double amount = product.getAmount();
-                    if (isSale && discountPercent > 0) {
-                        double discountedAmount = amount * (1 - discountPercent / 100);
-                        discountedAmount = Math.ceil(discountedAmount * 100) / 100.0;
-                        sum += discountedAmount;
-                    } else {
-                        sum += amount;
-                    }
-                    break;
-                }
-            }
-        }
-        return sum;
-    }
-
-    /**
-     * Является ли продажа оптовой для переданного минимального объема.
-     * Для перемещений неприменимо!
-     */
-    boolean isWholesale(double minQuantity) {
-        if (documentType.equals("moving")) {
-            return false;
-        }
-        double sumQuantity = 0;
-        for (Product product : productsList) {
-            if (product.getQuantity() >= minQuantity) {
-                return true;
-            }
-            sumQuantity += product.getQuantity();
-        }
-        return sumQuantity >= minQuantity;
-    }
-
-    /**
-     * Является ли перемещение внутренним (между складами одного владельца).
-     * Для продаж неприменимо!
-     */
-    boolean isInternalMovement() {
-        return documentType.equals("moving") &&
-                storage.getOwner().equals(movingStorage.getOwner());
-    }
+    abstract double promoSum(String[] promoArticles, double discountPercent);
 }
